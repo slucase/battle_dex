@@ -10,16 +10,12 @@ The Pokémon Battle Matchup Engine (Version 1) is a relational database designed
 erDiagram
     Generation ||--o{ Type_Matchup : "defines matchup in"
     Generation ||--o{ Species_Typing : "defines typing in"
-    Generation ||--o{ Team : "governs rules of"
     
     Type ||--o{ Type_Matchup : "acts as attacker"
     Type ||--o{ Type_Matchup : "acts as defender"
     Type ||--o{ Species_Typing : "assigned to"
     
     Species ||--o{ Species_Typing : "has historical typing"
-    Species ||--o{ Team_Member : "included as"
-    
-    Team ||--o{ Team_Member : "contains"
 
     Generation {
         Int gen_id PK
@@ -49,18 +45,6 @@ erDiagram
         Int gen_id PK, FK
         Int slot PK
         Int type_id FK
-    }
-    
-    Team {
-        Int team_id PK
-        Int gen_id FK
-        String team_name
-    }
-    
-    Team_Member {
-        Int team_id PK, FK
-        Int member_slot PK
-        Int species_id FK
     }
 ```
 
@@ -104,28 +88,10 @@ erDiagram
 | `gen_id` | Int | PK, FK | References `Generation(gen_id)`. |
 | `slot` | Int | PK | Slot of the type (1 for Primary, 2 for Secondary). Restricted to 1 or 2. |
 | `type_id` | Int | FK | References `Type(type_id)`. |
-
-### Team & Instance Management
-
-#### Table: `Team`
-| Column Name | Data Type | Key | Description |
-| :--- | :--- | :--- | :--- |
-| `team_id` | Int | PK | Unique identifier for the team. |
-| `gen_id` | Int | FK | References `Generation(gen_id)`. Dictates the generational ruleset for the team. |
-| `team_name` | String | - | Name of the team. |
-
-#### Table: `Team_Member`
-| Column Name | Data Type | Key | Description |
-| :--- | :--- | :--- | :--- |
-| `team_id` | Int | PK, FK | References `Team(team_id)`. |
-| `member_slot` | Int | PK | Position of the Pokémon in the team. Restricted to 1-6. |
-| `species_id` | Int | FK | References `Species(species_id)`. |
-
 ## 4. Data Integrity & Constraints
 
-- **Team Limits**: The `Team_Member` table enforces a maximum of 6 Pokémon per team by applying a constraint on `member_slot` (must be between 1 and 6). The composite primary key `(team_id, member_slot)` ensures no two members occupy the same slot in a team.
 - **Species Typing Slots**: The `Species_Typing` table restricts the `slot` column to `1` or `2`, representing primary and secondary types. This ensures a Pokémon can have a maximum of two types per generation.
-- **Generational Integrity**: A team's environment is scoped to a specific generation via `Team.gen_id`. When querying type effectiveness or retrieving a Pokémon's typing for a team, all joins must strictly include the `Team.gen_id` filter. This prevents illegal states, such as a Gen 3 team utilizing Gen 6 Fairy matchups or Gen 6 Fairy typings.
+- **Generational Integrity**: When querying type effectiveness or retrieving a Pokémon's typing for a specific generation, all joins must strictly include the `gen_id` filter. This prevents illegal states, such as a Gen 3 battle utilizing Gen 6 Fairy matchups or Gen 6 Fairy typings.
 - **Application-Layer Weakness Calculation**: The database solely stores singular type-to-type matchups in `Type_Matchup`. Dual-type weaknesses (e.g., Water/Flying vs. Electric) are calculated dynamically at the application layer by multiplying the individual lookup results, rather than being statically persisted.
 
 ## 5. Architecture Roadmap (V2)
